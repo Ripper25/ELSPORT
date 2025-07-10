@@ -3,7 +3,7 @@
   line-height: 1.5;
   font-weight: 400;
 
-  /* iOS-inspired color palette */
+  /* iOS-inspired color palette - Light mode */
   --ios-blue: #007AFF;
   --ios-green: #34C759;
   --ios-orange: #FF9500;
@@ -31,6 +31,32 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* Dark mode */
+[data-theme="dark"] {
+  /* iOS-inspired color palette - Dark mode */
+  --ios-blue: #0A84FF;
+  --ios-green: #32D74B;
+  --ios-orange: #FF9F0A;
+  --ios-red: #FF453A;
+  --ios-purple: #BF5AF2;
+  --ios-teal: #64D2FF;
+  --ios-gray: #8E8E93;
+  --ios-gray2: #636366;
+  --ios-gray3: #48484A;
+  --ios-gray4: #3A3A3C;
+  --ios-gray5: #2C2C2E;
+  --ios-gray6: #1C1C1E;
+  --ios-bg: #000000;
+  --ios-card: #1C1C1E;
+  --ios-text: #FFFFFF;
+  --ios-text-secondary: #EBEBF5;
+  --ios-separator: rgba(84, 84, 88, 0.65);
+  
+  color-scheme: dark;
+  color: var(--ios-text);
+  background-color: var(--ios-bg);
 }
 
 * {
