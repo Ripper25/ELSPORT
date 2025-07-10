@@ -12,6 +12,7 @@ class TenderList extends LitElement {
     error: { type: String },
     editingId: { type: Number },
     siteVisitInputs: { type: Array },
+    openMenuId: { type: String },
   };
 
   constructor() {
@@ -29,6 +30,7 @@ class TenderList extends LitElement {
     this._locationObserver = null;
     this.editingId = null;
     this.siteVisitInputs = [''];
+    this.openMenuId = null;
   }
 
   async connectedCallback() {
@@ -86,7 +88,7 @@ class TenderList extends LitElement {
           </button>
         </div>
 
-        ${this.showForm ? this._renderForm() : ''}
+        ${this.showForm ? this._renderModal() : ''}
 
         ${this.error ? html`<div class="error-message">${this.error}</div>` : ''}
 
@@ -102,10 +104,28 @@ class TenderList extends LitElement {
     `;
   }
 
+  _renderModal() {
+    return html`
+      <div class="modal-overlay" @click="${this._handleOverlayClick}">
+        <div class="modal-container" @click="${this._stopPropagation}">
+          ${this._renderForm()}
+        </div>
+      </div>
+    `;
+  }
+
   _renderForm() {
     return html`
       <div class="form-container">
-        <h3>${this.editingId ? 'Edit Tender' : 'Add New Tender'}</h3>
+        <div class="form-header">
+          <h3>${this.editingId ? 'Edit Tender' : 'Add New Tender'}</h3>
+          <button type="button" class="modal-close" @click="${this._cancelForm}" aria-label="Close">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
         <form @submit="${this._handleSubmit}">
           <div class="form-group">
             <label>Tender Number *</label>
@@ -142,27 +162,40 @@ class TenderList extends LitElement {
           <div class="form-group site-visits-group">
             <label>Site Visits</label>
             <div class="site-visits-container">
-              ${this.siteVisitInputs.map((visit, index) => html`
-                <div class="site-visit-row">
-                  <input
-                    type="text"
-                    .value="${visit}"
-                    @input="${(e) => this._updateSiteVisit(index, e.target.value)}"
-                    placeholder="Enter site visit date (e.g., 15/01/2025)"
-                    class="site-visit-input"
-                  />
-                  ${this.siteVisitInputs.length > 1 ? html`
-                    <button 
-                      type="button" 
-                      class="btn-remove-visit"
-                      @click="${() => this._removeSiteVisit(index)}"
-                      aria-label="Remove site visit"
-                    >
-                      ×
-                    </button>
-                  ` : ''}
-                </div>
-              `)}
+              ${this.siteVisitInputs.map((visit, index) => {
+                // Check if visit is completed and get clean text for input
+                const isCompleted = visit.startsWith('✓');
+                const inputValue = isCompleted ? visit.substring(1).trim() : visit;
+                
+                return html`
+                  <div class="site-visit-row ${isCompleted ? 'completed-visit' : ''}">
+                    ${isCompleted ? html`
+                      <div class="completion-indicator">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                          <polyline points="20,6 9,17 4,12"></polyline>
+                        </svg>
+                      </div>
+                    ` : ''}
+                    <input
+                      type="text"
+                      .value="${inputValue}"
+                      @input="${(e) => this._updateSiteVisit(index, e.target.value, isCompleted)}"
+                      placeholder="Enter site visit date (e.g., 15/01/2025)"
+                      class="site-visit-input ${isCompleted ? 'completed' : ''}"
+                    />
+                    ${this.siteVisitInputs.length > 1 ? html`
+                      <button 
+                        type="button" 
+                        class="btn-remove-visit"
+                        @click="${() => this._removeSiteVisit(index)}"
+                        aria-label="Remove site visit"
+                      >
+                        ×
+                      </button>
+                    ` : ''}
+                  </div>
+                `;
+              })}
               <button 
                 type="button" 
                 class="btn-add-visit"
@@ -190,17 +223,42 @@ class TenderList extends LitElement {
     return html`
       <div class="tender-card ${isClosed ? 'closed' : ''}">
         <div class="tender-header">
-          <span class="tender-number">${tender.tenderNumber}</span>
-          <span class="closing-date ${isClosed ? 'closed' : closingToday ? 'closing-today' : ''}">
-            ${isClosed ? 'Closed' : closingToday ? 'Closing Today' : 'Closing'}: ${format(closingDate, 'dd/MM/yyyy')}
-          </span>
+          <div class="tender-info">
+            <span class="tender-number">${tender.tenderNumber}</span>
+            <span class="closing-date ${isClosed ? 'closed' : closingToday ? 'closing-today' : ''}">
+              ${isClosed ? 'Closed' : closingToday ? 'Closing Today' : 'Closing'}: ${format(closingDate, 'dd/MM/yyyy')}
+            </span>
+          </div>
+          <div class="card-menu" @click="${(e) => this._toggleMenu(e, tender.id)}">
+            <button class="menu-trigger" aria-label="More options">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="1"></circle>
+                <circle cx="12" cy="5" r="1"></circle>
+                <circle cx="12" cy="19" r="1"></circle>
+              </svg>
+            </button>
+            ${this.openMenuId === tender.id ? html`
+              <div class="menu-dropdown">
+                <button class="menu-item" @click="${(e) => this._handleMenuAction(e, 'edit', tender)}">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="m18 2 4 4L8 20l-4 4-4-4L14 6l4-4z"></path>
+                    <path d="M18 6l4 4"></path>
+                  </svg>
+                  Edit
+                </button>
+                <button class="menu-item delete" @click="${(e) => this._handleMenuAction(e, 'delete', tender)}">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3,6 5,6 21,6"></polyline>
+                    <path d="m19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"></path>
+                  </svg>
+                  Delete
+                </button>
+              </div>
+            ` : ''}
+          </div>
         </div>
         <p class="description">${tender.description}</p>
         ${tender.siteVisits ? this._renderSiteVisits(tender.siteVisits) : ''}
-        <div class="card-actions">
-          <button class="btn-edit" @click="${() => this._editTender(tender)}">Edit</button>
-          <button class="btn-delete" @click="${() => this._deleteTender(tender.id)}">Delete</button>
-        </div>
       </div>
     `;
   }
@@ -214,9 +272,23 @@ class TenderList extends LitElement {
       <div class="site-visits-display">
         <span class="site-visits-label">Site Visits:</span>
         <div class="site-visits-list">
-          ${visits.map(visit => html`
-            <span class="site-visit-tag">${visit}</span>
-          `)}
+          ${visits.map((visit, index) => {
+            // Check if visit is marked as completed (starts with ✓)
+            const isCompleted = visit.startsWith('✓');
+            const visitText = isCompleted ? visit.substring(1).trim() : visit;
+            
+            return html`
+              <div class="site-visit-item ${isCompleted ? 'completed' : ''}" 
+                   @click="${(e) => this._toggleSiteVisitStatus(e, index, visit)}">
+                <div class="visit-checkbox ${isCompleted ? 'checked' : ''}">
+                  <svg class="check-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                    <polyline points="20,6 9,17 4,12"></polyline>
+                  </svg>
+                </div>
+                <span class="visit-text">${visitText}</span>
+              </div>
+            `;
+          })}
         </div>
       </div>
     `;
@@ -308,16 +380,121 @@ class TenderList extends LitElement {
     this.requestUpdate();
   }
 
+  _handleOverlayClick(e) {
+    if (e.target === e.currentTarget) {
+      this._cancelForm();
+    }
+  }
+
+  _stopPropagation(e) {
+    e.stopPropagation();
+  }
+
+  _toggleMenu(e, tenderId) {
+    e.stopPropagation();
+    this.openMenuId = this.openMenuId === tenderId ? null : tenderId;
+    this.requestUpdate();
+    
+    // Close menu when clicking outside
+    if (this.openMenuId) {
+      setTimeout(() => {
+        document.addEventListener('click', this._closeMenu.bind(this), { once: true });
+      }, 0);
+    }
+  }
+
+  _closeMenu() {
+    this.openMenuId = null;
+    this.requestUpdate();
+  }
+
+  _handleMenuAction(e, action, tender) {
+    e.stopPropagation();
+    this.openMenuId = null;
+    
+    if (action === 'edit') {
+      this._editTender(tender);
+    } else if (action === 'delete') {
+      this._deleteTender(tender.id);
+    }
+    
+    this.requestUpdate();
+  }
+
+  async _toggleSiteVisitStatus(e, index, currentVisit) {
+    e.stopPropagation();
+    
+    // Find the tender that contains this site visit
+    const tender = this.tenders.find(t => {
+      if (!t.siteVisits) return false;
+      const visits = t.siteVisits.split(';').map(v => v.trim());
+      return visits.includes(currentVisit);
+    });
+    
+    if (!tender) return;
+    
+    try {
+      const visits = tender.siteVisits.split(';').map(v => v.trim());
+      const isCompleted = currentVisit.startsWith('✓');
+      
+      // Toggle completion status
+      if (isCompleted) {
+        // Remove checkmark
+        visits[index] = currentVisit.substring(1).trim();
+      } else {
+        // Add checkmark
+        visits[index] = '✓' + currentVisit;
+      }
+      
+      const updatedSiteVisits = visits.join('; ');
+      const updatedTender = { ...tender, siteVisits: updatedSiteVisits };
+      
+      // Update in database
+      const dbTender = await tenderAPI.update(tender.id, {
+        tenderNumber: tender.tenderNumber,
+        description: tender.description,
+        closingDate: tender.closingDate,
+        siteVisits: updatedSiteVisits
+      });
+      
+      // Update local state
+      const transformedTender = transformTender(dbTender);
+      this.tenders = this.tenders.map(t => 
+        t.id === tender.id ? transformedTender : t
+      );
+      
+      this.requestUpdate();
+    } catch (error) {
+      console.error('Error updating site visit status:', error);
+      this.error = 'Failed to update site visit status. Please try again.';
+      this.requestUpdate();
+    }
+  }
+
   _editTender(tender) {
     this.editingId = tender.id;
+    
+    // Format the closing date for the date input (YYYY-MM-DD)
+    let formattedClosingDate = '';
+    if (tender.closingDate) {
+      try {
+        // Parse the date and format it as YYYY-MM-DD for the date input
+        const date = new Date(tender.closingDate);
+        formattedClosingDate = format(date, 'yyyy-MM-dd');
+      } catch (error) {
+        console.warn('Error formatting closing date for edit:', error);
+        formattedClosingDate = tender.closingDate;
+      }
+    }
+    
     this.formData = {
       tenderNumber: tender.tenderNumber,
       description: tender.description,
-      closingDate: tender.closingDate,
+      closingDate: formattedClosingDate,
       siteVisits: tender.siteVisits || ''
     };
     
-    // Parse existing site visits into individual inputs
+    // Parse existing site visits into individual inputs, preserving completion status
     if (tender.siteVisits && tender.siteVisits.trim() !== '') {
       this.siteVisitInputs = tender.siteVisits.split(';').map(visit => visit.trim());
     } else {
@@ -401,14 +578,97 @@ class TenderList extends LitElement {
       box-shadow: 0 4px 16px rgba(0, 122, 255, 0.3);
     }
 
+    /* Modal Styles */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      animation: modalFadeIn 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    @keyframes modalFadeIn {
+      from {
+        opacity: 0;
+        backdrop-filter: blur(0px);
+        -webkit-backdrop-filter: blur(0px);
+      }
+      to {
+        opacity: 1;
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+      }
+    }
+
+    .modal-container {
+      width: 100%;
+      max-width: 500px;
+      max-height: 90vh;
+      overflow-y: auto;
+      animation: modalSlideIn 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    @keyframes modalSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(40px) scale(0.95);
+        filter: blur(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+      }
+    }
+
     .form-container {
       background: var(--ios-card, #FFFFFF);
       padding: 0;
-      border-radius: 16px;
-      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
-      margin-bottom: 24px;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
       overflow: hidden;
-      animation: slideDown 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      position: relative;
+    }
+
+    .form-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 24px 24px 16px;
+      border-bottom: 1px solid var(--ios-separator, rgba(60, 60, 67, 0.12));
+    }
+
+    .modal-close {
+      width: 32px;
+      height: 32px;
+      border-radius: 16px;
+      background: var(--ios-gray6, #F2F2F7);
+      border: none;
+      color: var(--ios-gray, #8E8E93);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    .modal-close:hover {
+      background: var(--ios-gray5, #E5E5EA);
+      color: var(--ios-text, #000);
+      transform: scale(1.05);
+    }
+
+    .modal-close:active {
+      transform: scale(0.95);
     }
 
     @keyframes slideDown {
@@ -424,14 +684,12 @@ class TenderList extends LitElement {
       }
     }
 
-    h3 {
+    .form-header h3 {
       margin: 0;
-      padding: 20px 20px 16px;
       color: var(--ios-text, #000);
       font-size: 22px;
       font-weight: 600;
       letter-spacing: -0.3px;
-      border-bottom: 1px solid var(--ios-separator, rgba(60, 60, 67, 0.12));
     }
 
     .form-group {
@@ -604,8 +862,17 @@ class TenderList extends LitElement {
       justify-content: space-between;
       align-items: flex-start;
       margin-bottom: 12px;
+      position: relative;
+    }
+
+    .tender-info {
+      flex: 1;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
       flex-wrap: wrap;
       gap: 8px;
+      margin-right: 8px;
     }
 
     .tender-number {
@@ -657,19 +924,79 @@ class TenderList extends LitElement {
     .site-visits-list {
       display: flex;
       flex-wrap: wrap;
-      gap: 6px;
+      gap: 8px;
     }
 
-    .site-visit-tag {
-      display: inline-block;
-      background: var(--ios-blue, #007AFF);
-      color: white;
-      padding: 4px 10px;
-      border-radius: 12px;
-      font-size: 12px;
-      font-weight: 500;
-      white-space: nowrap;
+    .site-visit-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--ios-gray6, #F2F2F7);
+      padding: 8px 12px;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
       animation: fadeInTag 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      user-select: none;
+    }
+
+    .site-visit-item:hover {
+      background: var(--ios-gray5, #E5E5EA);
+      transform: translateY(-1px);
+    }
+
+    .site-visit-item:active {
+      transform: translateY(0) scale(0.98);
+    }
+
+    .site-visit-item.completed {
+      background: rgba(52, 199, 89, 0.1);
+      color: var(--ios-green, #34C759);
+    }
+
+    .site-visit-item.completed:hover {
+      background: rgba(52, 199, 89, 0.15);
+    }
+
+    .visit-checkbox {
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--ios-gray4, #D1D1D6);
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    .visit-checkbox.checked {
+      background: var(--ios-green, #34C759);
+      border-color: var(--ios-green, #34C759);
+    }
+
+    .check-icon {
+      color: white;
+      opacity: 0;
+      transform: scale(0.5);
+      transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    .visit-checkbox.checked .check-icon {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .visit-text {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--ios-text, #000);
+    }
+
+    .site-visit-item.completed .visit-text {
+      color: var(--ios-green, #34C759);
+      text-decoration: line-through;
+      opacity: 0.8;
     }
 
     @keyframes fadeInTag {
@@ -683,12 +1010,93 @@ class TenderList extends LitElement {
       }
     }
 
-    .card-actions {
-      margin-top: 16px;
-      padding-top: 16px;
-      border-top: 1px solid var(--ios-separator, rgba(60, 60, 67, 0.12));
+    /* Three-dot menu styles */
+    .card-menu {
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .menu-trigger {
+      width: 32px;
+      height: 32px;
+      border-radius: 16px;
+      background: transparent;
+      border: none;
+      color: var(--ios-gray, #8E8E93);
+      cursor: pointer;
       display: flex;
-      gap: 12px;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    .menu-trigger:hover {
+      background: var(--ios-gray6, #F2F2F7);
+      color: var(--ios-text, #000);
+    }
+
+    .menu-trigger:active {
+      transform: scale(0.9);
+    }
+
+    .menu-dropdown {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      background: var(--ios-card, #FFFFFF);
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+      backdrop-filter: blur(20px);
+      z-index: 1000;
+      min-width: 120px;
+      overflow: hidden;
+      animation: menuSlideIn 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    @keyframes menuSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-8px) scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .menu-item {
+      width: 100%;
+      padding: 12px 16px;
+      background: transparent;
+      border: none;
+      text-align: left;
+      font-size: 15px;
+      color: var(--ios-text, #000);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: background-color 0.2s ease;
+    }
+
+    .menu-item:hover {
+      background: var(--ios-gray6, #F2F2F7);
+    }
+
+    .menu-item:active {
+      background: var(--ios-gray5, #E5E5EA);
+    }
+
+    .menu-item.delete {
+      color: var(--ios-red, #FF3B30);
+    }
+
+    .menu-item.delete:hover {
+      background: rgba(255, 59, 48, 0.1);
+    }
+
+    .menu-item svg {
+      flex-shrink: 0;
     }
 
     .btn-edit {
