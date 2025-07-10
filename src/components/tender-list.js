@@ -11,6 +11,7 @@ class TenderList extends LitElement {
     loading: { type: Boolean },
     error: { type: String },
     editingId: { type: Number },
+    siteVisitInputs: { type: Array },
   };
 
   constructor() {
@@ -27,6 +28,7 @@ class TenderList extends LitElement {
     this.error = null;
     this._locationObserver = null;
     this.editingId = null;
+    this.siteVisitInputs = [''];
   }
 
   async connectedCallback() {
@@ -137,14 +139,38 @@ class TenderList extends LitElement {
             />
           </div>
 
-          <div class="form-group">
+          <div class="form-group site-visits-group">
             <label>Site Visits</label>
-            <input
-              type="text"
-              .value="${this.formData.siteVisits}"
-              @input="${(e) => this._updateFormData('siteVisits', e.target.value)}"
-              placeholder="Enter site visit dates"
-            />
+            <div class="site-visits-container">
+              ${this.siteVisitInputs.map((visit, index) => html`
+                <div class="site-visit-row">
+                  <input
+                    type="text"
+                    .value="${visit}"
+                    @input="${(e) => this._updateSiteVisit(index, e.target.value)}"
+                    placeholder="Enter site visit date (e.g., 15/01/2025)"
+                    class="site-visit-input"
+                  />
+                  ${this.siteVisitInputs.length > 1 ? html`
+                    <button 
+                      type="button" 
+                      class="btn-remove-visit"
+                      @click="${() => this._removeSiteVisit(index)}"
+                      aria-label="Remove site visit"
+                    >
+                      ×
+                    </button>
+                  ` : ''}
+                </div>
+              `)}
+              <button 
+                type="button" 
+                class="btn-add-visit"
+                @click="${this._addSiteVisit}"
+              >
+                + Add Site Visit
+              </button>
+            </div>
           </div>
 
           <div class="form-actions">
@@ -199,6 +225,37 @@ class TenderList extends LitElement {
       closingDate: '',
       siteVisits: ''
     };
+    this.siteVisitInputs = [''];
+  }
+
+  _addSiteVisit() {
+    this.siteVisitInputs = [...this.siteVisitInputs, ''];
+    this.requestUpdate();
+  }
+
+  _removeSiteVisit(index) {
+    if (this.siteVisitInputs.length > 1) {
+      this.siteVisitInputs = this.siteVisitInputs.filter((_, i) => i !== index);
+      this._updateSiteVisitsFormData();
+      this.requestUpdate();
+    }
+  }
+
+  _updateSiteVisit(index, value) {
+    this.siteVisitInputs = this.siteVisitInputs.map((visit, i) => 
+      i === index ? value : visit
+    );
+    this._updateSiteVisitsFormData();
+    this.requestUpdate();
+  }
+
+  _updateSiteVisitsFormData() {
+    // Join non-empty site visits with semicolons
+    const validVisits = this.siteVisitInputs.filter(visit => visit.trim() !== '');
+    this.formData = { 
+      ...this.formData, 
+      siteVisits: validVisits.join('; ') 
+    };
   }
 
   async _handleSubmit(e) {
@@ -242,6 +299,14 @@ class TenderList extends LitElement {
       closingDate: tender.closingDate,
       siteVisits: tender.siteVisits || ''
     };
+    
+    // Parse existing site visits into individual inputs
+    if (tender.siteVisits && tender.siteVisits.trim() !== '') {
+      this.siteVisitInputs = tender.siteVisits.split(';').map(visit => visit.trim());
+    } else {
+      this.siteVisitInputs = [''];
+    }
+    
     this.showForm = true;
     this.requestUpdate();
   }
@@ -604,6 +669,77 @@ class TenderList extends LitElement {
 
     .btn-delete:active {
       transform: scale(0.95);
+      opacity: 0.8;
+    }
+
+    /* Site Visits Styles */
+    .site-visits-group {
+      border-bottom: none !important;
+    }
+
+    .site-visits-container {
+      padding: 0 20px 16px;
+    }
+
+    .site-visit-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .site-visit-input {
+      flex: 1;
+      padding: 10px 14px !important;
+      border: 1px solid var(--ios-gray4, #D1D1D6);
+      border-radius: 8px;
+      background-color: var(--ios-gray6, #F2F2F7);
+      font-size: 15px;
+    }
+
+    .site-visit-input:focus {
+      border-color: var(--ios-blue, #007AFF);
+      background-color: var(--ios-card, #FFFFFF);
+    }
+
+    .btn-remove-visit {
+      width: 32px;
+      height: 32px;
+      border-radius: 16px;
+      background-color: var(--ios-red, #FF3B30);
+      color: white;
+      border: none;
+      font-size: 18px;
+      font-weight: 300;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      flex-shrink: 0;
+    }
+
+    .btn-remove-visit:active {
+      transform: scale(0.9);
+      opacity: 0.8;
+    }
+
+    .btn-add-visit {
+      width: 100%;
+      padding: 10px;
+      background-color: var(--ios-blue, #007AFF);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      margin-top: 4px;
+    }
+
+    .btn-add-visit:active {
+      transform: scale(0.98);
       opacity: 0.8;
     }
 
