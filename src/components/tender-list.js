@@ -196,10 +196,27 @@ class TenderList extends LitElement {
           </span>
         </div>
         <p class="description">${tender.description}</p>
-        ${tender.siteVisits ? html`<p class="site-visits">Site Visits: ${tender.siteVisits}</p>` : ''}
+        ${tender.siteVisits ? this._renderSiteVisits(tender.siteVisits) : ''}
         <div class="card-actions">
           <button class="btn-edit" @click="${() => this._editTender(tender)}">Edit</button>
           <button class="btn-delete" @click="${() => this._deleteTender(tender.id)}">Delete</button>
+        </div>
+      </div>
+    `;
+  }
+
+  _renderSiteVisits(siteVisits) {
+    const visits = siteVisits.split(';').map(visit => visit.trim()).filter(visit => visit !== '');
+    
+    if (visits.length === 0) return '';
+    
+    return html`
+      <div class="site-visits-display">
+        <span class="site-visits-label">Site Visits:</span>
+        <div class="site-visits-list">
+          ${visits.map(visit => html`
+            <span class="site-visit-tag">${visit}</span>
+          `)}
         </div>
       </div>
     `;
@@ -624,10 +641,46 @@ class TenderList extends LitElement {
       font-size: 15px;
     }
 
-    .site-visits {
+    /* Site Visits Display Styles */
+    .site-visits-display {
+      margin: 12px 0 0;
+    }
+
+    .site-visits-label {
       font-size: 13px;
+      font-weight: 600;
       color: var(--ios-gray, #8E8E93);
-      margin: 0;
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .site-visits-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .site-visit-tag {
+      display: inline-block;
+      background: var(--ios-blue, #007AFF);
+      color: white;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 500;
+      white-space: nowrap;
+      animation: fadeInTag 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    @keyframes fadeInTag {
+      from {
+        opacity: 0;
+        transform: scale(0.8);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
     }
 
     .card-actions {
