@@ -1,11 +1,10 @@
-import pg from 'pg';
-const { Pool } = pg;
+const { Pool } = require('pg');
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
-export const handler = async (event, context) => {
+exports.handler = async (event, context) => {
   const { httpMethod, path, body } = event;
   const headers = {
     'Access-Control-Allow-Origin': '*',

@@ -19,6 +19,9 @@
   
   # Node version for functions
   node_bundler = "esbuild"
+  
+  # Include external dependencies
+  external_node_modules = ["pg"]
 
 [build.environment]
   # Environment variables for the build
