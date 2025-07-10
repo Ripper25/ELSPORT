@@ -1,0 +1,174 @@
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import pg from 'pg';
+const { Pool } = pg;
+
+// Load environment variables
+dotenv.config({ path: './server/.env' });
+
+const app = express();
+const port = process.env.PORT || 3001;
+
+// PostgreSQL connection pool
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+// Test database connection
+pool.connect((err, client, release) => {
+  if (err) {
+    return console.error('Error acquiring client', err.stack);
+  }
+  console.log('Connected to PostgreSQL database');
+  release();
+});
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', message: 'Server is running' });
+});
+
+// Tender endpoints
+app.get('/api/tenders', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM tenders ORDER BY created_at DESC');
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching tenders:', error);
+    res.status(500).json({ error: 'Failed to fetch tenders' });
+  }
+});
+
+app.post('/api/tenders', async (req, res) => {
+  const { tender_number, description, closing_date, site_visits } = req.body;
+  
+  try {
+    const result = await pool.query(
+      'INSERT INTO tenders (tender_number, description, closing_date, site_visits) VALUES ($1, $2, $3, $4) RETURNING *',
+      [tender_number, description, closing_date, site_visits]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error('Error creating tender:', error);
+    res.status(500).json({ error: 'Failed to create tender' });
+  }
+});
+
+app.put('/api/tenders/:id', async (req, res) => {
+  const { id } = req.params;
+  const { tender_number, description, closing_date, site_visits } = req.body;
+  
+  try {
+    const result = await pool.query(
+      'UPDATE tenders SET tender_number = $1, description = $2, closing_date = $3, site_visits = $4, updated_at = CURRENT_TIMESTAMP WHERE id = $5 RETURNING *',
+      [tender_number, description, closing_date, site_visits, id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Tender not found' });
+    }
+    
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Error updating tender:', error);
+    res.status(500).json({ error: 'Failed to update tender' });
+  }
+});
+
+app.delete('/api/tenders/:id', async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    const result = await pool.query('DELETE FROM tenders WHERE id = $1 RETURNING *', [id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Tender not found' });
+    }
+    
+    res.json({ message: 'Tender deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting tender:', error);
+    res.status(500).json({ error: 'Failed to delete tender' });
+  }
+});
+
+// Task endpoints
+app.get('/api/tasks', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM tasks ORDER BY created_at DESC');
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching tasks:', error);
+    res.status(500).json({ error: 'Failed to fetch tasks' });
+  }
+});
+
+app.post('/api/tasks', async (req, res) => {
+  const { description, assigned_to, due_date, status } = req.body;
+  
+  try {
+    const result = await pool.query(
+      'INSERT INTO tasks (description, assigned_to, due_date, status) VALUES ($1, $2, $3, $4) RETURNING *',
+      [description, assigned_to, due_date, status || 'PENDING']
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error('Error creating task:', error);
+    res.status(500).json({ error: 'Failed to create task' });
+  }
+});
+
+app.put('/api/tasks/:id', async (req, res) => {
+  const { id } = req.params;
+  const { description, assigned_to, due_date, status } = req.body;
+  
+  try {
+    const result = await pool.query(
+      'UPDATE tasks SET description = $1, assigned_to = $2, due_date = $3, status = $4, updated_at = CURRENT_TIMESTAMP WHERE id = $5 RETURNING *',
+      [description, assigned_to, due_date, status, id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+    
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Error updating task:', error);
+    res.status(500).json({ error: 'Failed to update task' });
+  }
+});
+
+app.delete('/api/tasks/:id', async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    const result = await pool.query('DELETE FROM tasks WHERE id = $1 RETURNING *', [id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+    
+    res.json({ message: 'Task deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting task:', error);
+    res.status(500).json({ error: 'Failed to delete task' });
+  }
+});
+
+// Start server
+app.listen(port, () => {
+  console.log(`Server running at http://localhost:${port}`);
+});
+
+// Graceful shutdown
+process.on('SIGINT', async () => {
+  console.log('Shutting down server...');
+  await pool.end();
+  process.exit(0);
+});

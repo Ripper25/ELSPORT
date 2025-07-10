@@ -1,0 +1,82 @@
+# Netlify configuration file for elsport-tender-tracker
+
+[build]
+  # Directory to change to before starting the build
+  base = ""
+  
+  # Build command
+  command = "npm run build"
+  
+  # Directory that contains the deploy-ready files
+  publish = "dist"
+  
+  # Node version for the build environment
+  environment = { NODE_VERSION = "18" }
+
+[functions]
+  # Directory containing serverless functions
+  directory = "netlify/functions"
+  
+  # Node version for functions
+  node_bundler = "esbuild"
+
+[build.environment]
+  # Environment variables for the build
+  # Using Netlify Functions, so the API URL will be relative
+  VITE_API_URL = "/.netlify/functions"
+
+# API redirects
+[[redirects]]
+  from = "/api/tenders"
+  to = "/.netlify/functions/tenders"
+  status = 200
+
+[[redirects]]
+  from = "/api/tenders/*"
+  to = "/.netlify/functions/tenders/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/api/tasks"
+  to = "/.netlify/functions/tasks"
+  status = 200
+
+[[redirects]]
+  from = "/api/tasks/*"
+  to = "/.netlify/functions/tasks/:splat"
+  status = 200
+
+[[redirects]]
+  # SPA fallback - redirect all routes to index.html
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[[headers]]
+  # Security headers
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    X-XSS-Protection = "1; mode=block"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
+[[headers]]
+  # Cache control for static assets
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  # Cache control for index.html
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+# Development settings (optional)
+[dev]
+  command = "npm run dev"
+  port = 5173
+  targetPort = 3001
+  autoLaunch = true
