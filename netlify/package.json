@@ -1,0 +1,8 @@
+{
+  "name": "netlify-functions-deps",
+  "version": "1.0.0",
+  "description": "Dependencies for Netlify Functions",
+  "dependencies": {
+    "pg": "^8.16.3"
+  }
+}

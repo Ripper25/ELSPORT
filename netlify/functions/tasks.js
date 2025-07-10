@@ -1,10 +1,41 @@
 const { Pool } = require('pg');
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
+let pool;
 
 exports.handler = async (event, context) => {
+  // Initialize pool inside handler to ensure environment variables are available
+  if (!pool) {
+    if (!process.env.DATABASE_URL) {
+      console.error('DATABASE_URL is not set');
+      return {
+        statusCode: 500,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ error: 'Database configuration error' }),
+      };
+    }
+    
+    try {
+      pool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: {
+          rejectUnauthorized: false
+        }
+      });
+    } catch (error) {
+      console.error('Pool creation error:', error);
+      return {
+        statusCode: 500,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ error: 'Database connection error' }),
+      };
+    }
+  }
   const { httpMethod, path, body } = event;
   const headers = {
     'Access-Control-Allow-Origin': '*',
