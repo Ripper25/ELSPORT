@@ -9,18 +9,16 @@
   
   # Directory that contains the deploy-ready files
   publish = "dist"
-  
+
+[build.environment]
   # Node version for the build environment
-  environment = { NODE_VERSION = "18" }
+  NODE_VERSION = "18"
+  # Using Netlify Functions, so the API URL will be relative
+  VITE_API_URL = "/.netlify/functions"
 
 [functions]
   # Directory containing serverless functions
   directory = "netlify/functions"
-
-[build.environment]
-  # Environment variables for the build
-  # Using Netlify Functions, so the API URL will be relative
-  VITE_API_URL = "/.netlify/functions"
 
 # API redirects
 [[redirects]]
