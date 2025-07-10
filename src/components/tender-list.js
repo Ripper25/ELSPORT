@@ -611,10 +611,11 @@ class TenderList extends LitElement {
 
     .modal-container {
       width: 100%;
-      max-width: 500px;
-      max-height: 90vh;
+      max-width: 540px;
+      max-height: 95vh;
       overflow-y: auto;
       animation: modalSlideIn 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      margin: 20px;
     }
 
     @keyframes modalSlideIn {
@@ -695,20 +696,27 @@ class TenderList extends LitElement {
     .form-group {
       margin-bottom: 0;
       border-bottom: 1px solid var(--ios-separator, rgba(60, 60, 67, 0.12));
+      position: relative;
+      transition: all 0.2s ease;
     }
 
     .form-group:last-of-type {
       border-bottom: none;
     }
 
+    .form-group:hover {
+      background-color: var(--ios-gray6, rgba(242, 242, 247, 0.3));
+    }
+
     label {
       display: block;
-      padding: 12px 20px 6px;
+      padding: 16px 20px 6px;
       font-weight: 600;
       color: var(--ios-text-secondary, #3C3C43);
       font-size: 13px;
       text-transform: uppercase;
       letter-spacing: -0.08px;
+      margin-bottom: 0;
     }
 
     input, textarea, select {
@@ -720,6 +728,7 @@ class TenderList extends LitElement {
       background: transparent;
       color: var(--ios-text, #000);
       transition: background-color 0.2s;
+      box-sizing: border-box;
     }
 
     /* Apply -webkit-appearance: none to all inputs except date */
@@ -739,15 +748,42 @@ class TenderList extends LitElement {
     textarea {
       resize: vertical;
       line-height: 1.4;
+      min-height: 80px;
     }
 
+    /* Enhanced date input styling */
     input[type="date"] {
       cursor: pointer;
+      position: relative;
+      padding-right: 50px;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
     }
 
-    /* Restore native appearance for date inputs */
+    /* Make date picker icon more visible */
     input[type="date"]::-webkit-calendar-picker-indicator {
       cursor: pointer;
+      position: absolute;
+      right: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 20px;
+      height: 20px;
+      opacity: 0.6;
+      transition: opacity 0.2s ease;
+    }
+
+    input[type="date"]:hover::-webkit-calendar-picker-indicator {
+      opacity: 1;
+    }
+
+    /* Firefox date picker styling */
+    input[type="date"]::-moz-calendar-picker-indicator {
+      cursor: pointer;
+      width: 20px;
+      height: 20px;
+      opacity: 0.6;
     }
 
     .form-actions {
@@ -1139,31 +1175,40 @@ class TenderList extends LitElement {
     /* Site Visits Styles */
     .site-visits-group {
       border-bottom: none !important;
+      background-color: var(--ios-gray6, rgba(242, 242, 247, 0.5));
     }
 
     .site-visits-container {
-      padding: 0 20px 16px;
+      padding: 16px 20px 20px;
     }
 
     .site-visit-row {
       display: flex;
       align-items: center;
-      gap: 8px;
-      margin-bottom: 8px;
+      gap: 12px;
+      margin-bottom: 12px;
+      transition: all 0.2s ease;
+    }
+
+    .site-visit-row:last-child {
+      margin-bottom: 0;
     }
 
     .site-visit-input {
       flex: 1;
-      padding: 10px 14px !important;
+      padding: 12px 16px !important;
       border: 1px solid var(--ios-gray4, #D1D1D6);
-      border-radius: 8px;
-      background-color: var(--ios-gray6, #F2F2F7);
-      font-size: 15px;
+      border-radius: 10px;
+      background-color: var(--ios-card, #FFFFFF);
+      font-size: 16px;
+      transition: all 0.2s ease;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
 
     .site-visit-input:focus {
       border-color: var(--ios-blue, #007AFF);
       background-color: var(--ios-card, #FFFFFF);
+      box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
     }
 
     .btn-remove-visit {
@@ -1190,16 +1235,23 @@ class TenderList extends LitElement {
 
     .btn-add-visit {
       width: 100%;
-      padding: 10px;
+      padding: 12px 16px;
       background-color: var(--ios-blue, #007AFF);
       color: white;
       border: none;
-      border-radius: 8px;
-      font-size: 15px;
-      font-weight: 500;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
       cursor: pointer;
       transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-      margin-top: 4px;
+      margin-top: 8px;
+      box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3);
+    }
+
+    .btn-add-visit:hover {
+      background-color: var(--ios-blue-dark, #0056D6);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 122, 255, 0.4);
     }
 
     .btn-add-visit:active {
