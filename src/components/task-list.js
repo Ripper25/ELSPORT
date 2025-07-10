@@ -86,7 +86,7 @@ class TaskList extends LitElement {
           </button>
         </div>
 
-        ${this.showForm ? this._renderForm() : ''}
+        ${this.showForm ? this._renderModal() : ''}
 
         ${this.error ? html`<div class="error-message">${this.error}</div>` : ''}
 
@@ -102,10 +102,28 @@ class TaskList extends LitElement {
     `;
   }
 
+  _renderModal() {
+    return html`
+      <div class="modal-overlay" @click="${this._handleOverlayClick}">
+        <div class="modal-container" @click="${this._stopPropagation}">
+          ${this._renderForm()}
+        </div>
+      </div>
+    `;
+  }
+
   _renderForm() {
     return html`
       <div class="form-container">
-        <h3>${this.editingId ? 'Edit Task' : 'Add New Task'}</h3>
+        <div class="form-header">
+          <h3>${this.editingId ? 'Edit Task' : 'Add New Task'}</h3>
+          <button type="button" class="modal-close" @click="${this._cancelForm}" aria-label="Close">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
         <form @submit="${this._handleSubmit}">
           <div class="form-group">
             <label>Task Description *</label>
@@ -264,6 +282,16 @@ class TaskList extends LitElement {
   _updateFormData(field, value) {
     this.formData = { ...this.formData, [field]: value };
     this.requestUpdate();
+  }
+
+  _handleOverlayClick(e) {
+    if (e.target === e.currentTarget) {
+      this._cancelForm();
+    }
+  }
+
+  _stopPropagation(e) {
+    e.stopPropagation();
   }
 
   _editTask(task) {
