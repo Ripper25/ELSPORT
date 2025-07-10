@@ -16,12 +16,6 @@
 [functions]
   # Directory containing serverless functions
   directory = "netlify/functions"
-  
-  # Node version for functions
-  node_bundler = "esbuild"
-  
-  # Include external dependencies
-  external_node_modules = ["pg"]
 
 [build.environment]
   # Environment variables for the build
