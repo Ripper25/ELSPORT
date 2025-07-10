@@ -20,7 +20,6 @@ class TenderList extends LitElement {
     this.tenders = [];
     this.showForm = false;
     this.formData = {
-      tenderNumber: '',
       description: '',
       closingDate: '',
       siteVisits: ''
@@ -83,9 +82,11 @@ class TenderList extends LitElement {
       <div class="container">
         <div class="header">
           <h2>Tender Management</h2>
-          <button class="fab" @click="${this._toggleForm}">
-            ${this.showForm ? '×' : '+'}
-          </button>
+          <div class="header-actions">
+            <button class="fab" @click="${this._toggleForm}">
+              ${this.showForm ? '×' : '+'}
+            </button>
+          </div>
         </div>
 
         ${this.showForm ? this._renderModal() : ''}
@@ -127,17 +128,6 @@ class TenderList extends LitElement {
           </button>
         </div>
         <form @submit="${this._handleSubmit}">
-          <div class="form-group">
-            <label>Tender Number *</label>
-            <input
-              type="text"
-              .value="${this.formData.tenderNumber}"
-              @input="${(e) => this._updateFormData('tenderNumber', e.target.value)}"
-              required
-              placeholder="Enter tender number"
-            />
-          </div>
-
           <div class="form-group">
             <label>Description *</label>
             <textarea
@@ -309,7 +299,6 @@ class TenderList extends LitElement {
 
   _resetForm() {
     this.formData = {
-      tenderNumber: '',
       description: '',
       closingDate: '',
       siteVisits: ''
@@ -330,9 +319,12 @@ class TenderList extends LitElement {
     }
   }
 
-  _updateSiteVisit(index, value) {
+  _updateSiteVisit(index, value, wasCompleted = false) {
+    // If the visit was completed and we're editing it, preserve the completion status
+    const updatedValue = wasCompleted ? '✓' + value : value;
+    
     this.siteVisitInputs = this.siteVisitInputs.map((visit, i) => 
-      i === index ? value : visit
+      i === index ? updatedValue : visit
     );
     this._updateSiteVisitsFormData();
     this.requestUpdate();
@@ -408,6 +400,7 @@ class TenderList extends LitElement {
     this.requestUpdate();
   }
 
+
   _handleMenuAction(e, action, tender) {
     e.stopPropagation();
     this.openMenuId = null;
@@ -451,7 +444,6 @@ class TenderList extends LitElement {
       
       // Update in database
       const dbTender = await tenderAPI.update(tender.id, {
-        tenderNumber: tender.tenderNumber,
         description: tender.description,
         closingDate: tender.closingDate,
         siteVisits: updatedSiteVisits
@@ -488,7 +480,6 @@ class TenderList extends LitElement {
     }
     
     this.formData = {
-      tenderNumber: tender.tenderNumber,
       description: tender.description,
       closingDate: formattedClosingDate,
       siteVisits: tender.siteVisits || ''
@@ -547,6 +538,15 @@ class TenderList extends LitElement {
       margin-bottom: 24px;
       padding: 0 4px;
     }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: relative;
+      z-index: 2;
+    }
+
 
     h2 {
       margin: 0;
@@ -791,6 +791,7 @@ class TenderList extends LitElement {
 
     .tender-list {
       display: grid;
+      grid-template-columns: 1fr;
       gap: 16px;
     }
 
@@ -820,9 +821,11 @@ class TenderList extends LitElement {
       padding: 16px;
       border-radius: 16px;
       box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
-      transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
       animation: cardEntry 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) backwards;
+      will-change: transform;
     }
+
 
     @keyframes cardEntry {
       from {
