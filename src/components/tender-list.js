@@ -1,7 +1,7 @@
 import { LitElement, html, css } from 'lit';
 import { Router } from '@vaadin/router';
 import { tenderAPI, transformTender } from '../services/api';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, isPast, isToday } from 'date-fns';
 
 class TenderList extends LitElement {
   static properties = {
@@ -157,11 +157,17 @@ class TenderList extends LitElement {
   }
 
   _renderTenderCard(tender) {
+    const closingDate = new Date(tender.closingDate);
+    const isClosed = isPast(closingDate) && !isToday(closingDate);
+    const closingToday = isToday(closingDate);
+    
     return html`
-      <div class="tender-card">
+      <div class="tender-card ${isClosed ? 'closed' : ''}">
         <div class="tender-header">
           <span class="tender-number">${tender.tenderNumber}</span>
-          <span class="closing-date">Closing: ${format(new Date(tender.closingDate), 'dd/MM/yyyy')}</span>
+          <span class="closing-date ${isClosed ? 'closed' : closingToday ? 'closing-today' : ''}">
+            ${isClosed ? 'Closed' : closingToday ? 'Closing Today' : 'Closing'}: ${format(closingDate, 'dd/MM/yyyy')}
+          </span>
         </div>
         <p class="description">${tender.description}</p>
         ${tender.siteVisits ? html`<p class="site-visits">Site Visits: ${tender.siteVisits}</p>` : ''}
@@ -502,6 +508,15 @@ class TenderList extends LitElement {
       box-shadow: 0 1px 6px rgba(0, 0, 0, 0.04);
     }
 
+    .tender-card.closed {
+      opacity: 0.8;
+      background: var(--ios-gray6, #F2F2F7);
+    }
+
+    .tender-card.closed .tender-number {
+      color: var(--ios-gray, #8E8E93);
+    }
+
     .tender-header {
       display: flex;
       justify-content: space-between;
@@ -527,6 +542,16 @@ class TenderList extends LitElement {
       border-radius: 6px;
     }
 
+    .closing-date.closed {
+      background: var(--ios-red, #FF3B30);
+      color: white;
+    }
+
+    .closing-date.closing-today {
+      background: var(--ios-orange, #FF9500);
+      color: white;
+    }
+
     .description {
       color: var(--ios-text, #000);
       margin: 0 0 12px;
@@ -546,6 +571,23 @@ class TenderList extends LitElement {
       border-top: 1px solid var(--ios-separator, rgba(60, 60, 67, 0.12));
       display: flex;
       gap: 12px;
+    }
+
+    .btn-edit {
+      padding: 8px 16px;
+      background-color: var(--ios-blue, #007AFF);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    .btn-edit:active {
+      transform: scale(0.95);
+      opacity: 0.8;
     }
 
     .btn-delete {
